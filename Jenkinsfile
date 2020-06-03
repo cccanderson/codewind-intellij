@@ -17,7 +17,7 @@ pipeline {
     }
 
     parameters {
-        string(name: "APPSODY_VERSION", defaultValue: "0.6.0", description: "Appsody executable version to download")
+        string(name: "APPSODY_VERSION", defaultValue: "0.6.2", description: "Appsody executable version to download")
     }
 
     stages {
@@ -101,12 +101,12 @@ pipeline {
                         export REPO_NAME="codewind-intellij"
                         export OUTPUT_NAME="codewind-intellij"
                         export OUTPUT_DIR="$WORKSPACE/dev/build/distributions"
-                        export DOWNLOAD_AREA_URL="https://download.eclipse.org/codewind/$REPO_NAME"
+                        export DOWNLOAD_AREA_URL="https://archive.eclipse.org/codewind/$REPO_NAME"
                         export LATEST_DIR="latest"
                         export BUILD_INFO="build_info.properties"
                         export UPDATE_PLUGINS_XML="updatePlugins.xml"
                         export sshHost="genie.codewind@projects-storage.eclipse.org"
-                        export deployDir="/home/data/httpd/download.eclipse.org/codewind/$REPO_NAME"
+                        export deployDir="/home/data/httpd/archive.eclipse.org/codewind/$REPO_NAME"
                         export TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
                     
                         if [ -z $CHANGE_ID ]; then
@@ -129,7 +129,7 @@ pipeline {
                             echo '<!-- Build date: '$TIMESTAMP '-->' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
                             echo '<plugins>' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
                             echo '    <plugin id="org.eclipse.codewind.intellij" url="'$DOWNLOAD_AREA_URL/$GIT_BRANCH/$LATEST_DIR/$OUTPUT_NAME.zip'" version="'$TIMESTAMP'">' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
-                            echo '        <idea-version since-build="193.5233.102" until-build="999.*"/>' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
+                            echo '        <idea-version since-build="201.7223.91" until-build="999.*"/>' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
                             echo '        <name>Codewind</name>' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
                             echo '        <description>Adds support for developing cloud-native, containerized web applications.</description>' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML
                             echo '    </plugin>' >> $OUTPUT_DIR/$UPDATE_PLUGINS_XML

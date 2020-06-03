@@ -16,11 +16,7 @@ import com.intellij.icons.AllIcons;
 import com.intellij.ide.actions.NextOccurenceToolbarAction;
 import com.intellij.ide.actions.PreviousOccurenceToolbarAction;
 import com.intellij.ide.browsers.BrowserLauncher;
-import com.intellij.openapi.actionSystem.ActionManager;
-import com.intellij.openapi.actionSystem.ActionPlaces;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
@@ -31,11 +27,7 @@ import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowContentUiType;
 import com.intellij.openapi.wm.ToolWindowManager;
-import com.intellij.ui.content.Content;
-import com.intellij.ui.content.ContentFactory;
-import com.intellij.ui.content.ContentManager;
-import com.intellij.ui.content.ContentManagerAdapter;
-import com.intellij.ui.content.ContentManagerEvent;
+import com.intellij.ui.content.*;
 import com.intellij.ui.content.tabs.TabbedContentAction;
 import org.eclipse.codewind.intellij.core.CodewindApplication;
 import org.eclipse.codewind.intellij.core.CoreUtil;
@@ -46,6 +38,7 @@ import org.eclipse.codewind.intellij.core.console.SocketConsole;
 import org.eclipse.codewind.intellij.ui.CodewindToolWindow;
 import org.eclipse.codewind.intellij.ui.IconCache;
 import org.eclipse.codewind.intellij.ui.constants.UIConstants;
+import org.eclipse.codewind.intellij.ui.toolwindow.LogsViewNotifier;
 import org.eclipse.codewind.intellij.ui.toolwindow.UpdateHandler;
 import org.eclipse.codewind.intellij.ui.tree.CodewindToolWindowHelper;
 import org.jetbrains.annotations.NotNull;
@@ -61,6 +54,7 @@ public class ShowAllLogFilesTask extends Task.Backgroundable {
     private final CodewindApplication application;
     private ToolWindow logFilesToolWindow;
     private ContentManager contentManager = null;
+    private LogsViewNotifier notifier;
 
     public ShowAllLogFilesTask(CodewindApplication application, Project project) {
         super(project, message("ShowAllLogFilesAction"));
@@ -113,10 +107,11 @@ public class ShowAllLogFilesTask extends Task.Backgroundable {
             logFilesToolWindow = toolWindowManager.registerToolWindow(CodewindToolWindowHelper.SHOW_LOG_FILES_TOOLWINDOW_ID, true, ToolWindowAnchor.BOTTOM);
             logFilesToolWindow.setContentUiType(ToolWindowContentUiType.COMBO, null);
             logFilesToolWindow.setIcon(IconCache.getCachedIcon(IconCache.ICONS_CODEWIND_13PX_SVG));
+            logFilesToolWindow.setStripeTitle(message("LogFilesToolWindow"));
         }
         contentManager = logFilesToolWindow.getContentManager();
         if (windowRequiresRegistration) {
-            contentManager.addContentManagerListener(new ContentManagerAdapter() {
+            contentManager.addContentManagerListener(new ContentManagerListener() {
                 public void contentRemoved(@NotNull ContentManagerEvent event) {
                     ContentManagerEvent.ContentOperation operation = event.getOperation();
                     if (operation.equals(ContentManagerEvent.ContentOperation.remove)) {
@@ -164,8 +159,11 @@ public class ShowAllLogFilesTask extends Task.Backgroundable {
         content.setDescription(org.eclipse.codewind.intellij.core.messages.CodewindCoreBundle.message("LogFileConsoleName", application.name, logInfo.logName));
         contentManager.addContent(content);
         Disposer.register(getProject(), consoleView);
-        
-        SocketConsole socketConsole = new SocketConsole(content, consoleView, content.getDisplayName(), logInfo, application);
+
+        if (notifier == null) {
+            notifier = new LogsViewNotifier(getProject());
+        }
+        SocketConsole socketConsole = new SocketConsole(content, consoleView, content.getDisplayName(), logInfo, application, notifier);
         DefaultActionGroup toolbarGroup = new DefaultActionGroup();
 
         AnAction[] consoleActions = consoleView.createConsoleActions();

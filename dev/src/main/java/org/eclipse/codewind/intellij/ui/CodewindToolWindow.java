@@ -11,13 +11,7 @@
 
 package org.eclipse.codewind.intellij.ui;
 
-import com.intellij.openapi.actionSystem.ActionManager;
-import com.intellij.openapi.actionSystem.ActionPlaces;
-import com.intellij.openapi.actionSystem.ActionPopupMenu;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import com.intellij.ui.PopupHandler;
@@ -25,11 +19,7 @@ import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.treeStructure.Tree;
-import org.eclipse.codewind.intellij.core.CodewindApplication;
-import org.eclipse.codewind.intellij.core.CodewindIntellijApplication;
-import org.eclipse.codewind.intellij.core.CodewindManager;
-import org.eclipse.codewind.intellij.core.CoreUtil;
-import org.eclipse.codewind.intellij.core.Logger;
+import org.eclipse.codewind.intellij.core.*;
 import org.eclipse.codewind.intellij.core.cli.InstallStatus;
 import org.eclipse.codewind.intellij.core.connection.CodewindConnection;
 import org.eclipse.codewind.intellij.core.connection.ConnectionEnv;
@@ -44,8 +34,7 @@ import org.eclipse.codewind.intellij.ui.tree.CodewindTreeNodeCellRenderer;
 
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
-import java.awt.BorderLayout;
-import java.awt.Component;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URISyntaxException;
@@ -72,6 +61,9 @@ public class CodewindToolWindow extends JBPanel<CodewindToolWindow> {
     private final AnAction enableAutoBuildAction;
     private final AnAction disableAutoBuildAction;
     private final AnAction refreshAction;
+    private final AnAction openAppMonitorAction;
+    private final AnAction enableInjectMetricsAction;
+    private final AnAction disableInjectMetricsAction;
     private final AnAction openPerformanceDashboardAction;
     private final AnAction openTektonDashboardAction;
     private final AnAction enableProjectAction;
@@ -83,6 +75,7 @@ public class CodewindToolWindow extends JBPanel<CodewindToolWindow> {
     private final AnAction restartRunModeAction;
     private final AnAction restartDebugModeAction;
     private final AnAction attachDebuggerAction;
+    private final AnAction openShellAction;
 
     private final AnAction newProjectAction;
 
@@ -105,6 +98,9 @@ public class CodewindToolWindow extends JBPanel<CodewindToolWindow> {
         enableAutoBuildAction = new EnableAutoBuildAction();
         disableAutoBuildAction = new DisableAutoBuildAction();
         refreshAction = new RefreshAction();
+        openAppMonitorAction = new OpenAppMonitorAction();
+        enableInjectMetricsAction = new EnableDisableInjectMetricsAction(true);
+        disableInjectMetricsAction = new EnableDisableInjectMetricsAction(false);
         openPerformanceDashboardAction = new OpenPerformanceDashboardAction();
         openTektonDashboardAction = new OpenTektonDashboardAction();
         enableProjectAction = new EnableProjectAction();
@@ -116,6 +112,7 @@ public class CodewindToolWindow extends JBPanel<CodewindToolWindow> {
         restartRunModeAction = new RestartRunModeAction();
         restartDebugModeAction = new RestartDebugModeAction();
         attachDebuggerAction = new AttachDebuggerAction();
+        openShellAction = new OpenContainerShellAction();
 
         newProjectAction = new NewCodewindProjectAction();
 
@@ -146,6 +143,7 @@ public class CodewindToolWindow extends JBPanel<CodewindToolWindow> {
 
     public void init() {
         updateHandler = UpdateHandler.getInstance();
+        CoreUtil.initLogUpdatesNotificationGroup();
         CoreUtil.runAsync(() -> {
             tree.setModel(getTreeModel());
             CoreUtil.setUpdateHandler(getTreeModel());
@@ -313,19 +311,36 @@ public class CodewindToolWindow extends JBPanel<CodewindToolWindow> {
 
         actions.add(openApplicationAction);
         actions.add(openAppOverviewAction);
+        actions.add(openShellAction);
+        actions.addSeparator();
+        // Guaranteed separator here
+        int numItems = actions.getChildrenCount();
+        if (application.hasMetricsDashboard()) {
+            actions.add(openAppMonitorAction);
+        }
         if (application.hasPerfDashboard()) {
             actions.add(openPerformanceDashboardAction);
         }
+        if (application.canInjectMetrics()) {
+            if (!application.isMetricsInjected()) {
+                actions.add(enableInjectMetricsAction);
+            } else {
+                actions.add(disableInjectMetricsAction);
+            }
+        }
+        if (actions.getChildrenCount() > numItems) {
+            actions.addSeparator();
+        }
+        // Guaranteed separator here
         CodewindConnection connection = application.getConnection();
         if (connection != null) {
             ConnectionEnv.TektonDashboard tekton = connection.getTektonDashboard();
             if (tekton.hasTektonDashboard()) {
-                actions.addSeparator();
                 actions.add(openTektonDashboardAction);
+                actions.addSeparator();
             }
         }
 
-        actions.addSeparator();
         // Todo: Change this to Open in New Window or Current Window
         //        actions.add(openIdeaProjectAction);
         // actions.addSeparator();

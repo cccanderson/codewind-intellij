@@ -58,7 +58,7 @@ task downloadJson(type: Download) {
 }
 
 task downloadFileWatchers(type: Download) {
-    sourceUrl = 'http://download.eclipse.org/codewind/codewind-eclipse/master/latest/codewind.zip'
+    sourceUrl = 'http://archive.eclipse.org/codewind/codewind-eclipse/master/latest/codewind.zip'
     target = file('src/main/lib/codewind.zip')
 }
 
@@ -95,7 +95,7 @@ defaultTasks 'copyDependencies', 'compileJava'
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version '2019.3'
+    version '2020.1.1'
     updateSinceUntilBuild false
-    plugins = ['java', 'maven']
+    plugins = ['java', 'maven', 'terminal']
 }
